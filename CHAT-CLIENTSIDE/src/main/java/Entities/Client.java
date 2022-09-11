@@ -9,23 +9,29 @@ public class Client {
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
     private String username;
+    private String channel;
+    private byte[] publicKey;
+    private byte[] privateKey;
 
-    private String keyAccess;
-
-    public Client(Socket socket, String username, String keyAccess) {
+    public Client(Socket socket, String username, String channel) {
+        GenerateKeys gk;
         try {
+            gk = new GenerateKeys(1024);
+            gk.createKeys();
             this.socket = socket;
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.username = username;
-            this.keyAccess = keyAccess;
+            this.channel = channel;
+            this.privateKey = gk.getPrivateKey().getEncoded();
+            this.publicKey = gk.getPublicKey().getEncoded();
         } catch (Exception e) {
             ClientService.closeEverything(socket, bufferedReader, bufferedWriter);
         }
     }
 
-    public String getKeyAccess() {
-        return keyAccess;
+    public String getChannel() {
+        return channel;
     }
 
     public Socket getSocket() {
@@ -42,5 +48,11 @@ public class Client {
 
     public BufferedWriter getBufferedWriter() {
         return this.bufferedWriter;
+    }
+    public byte[] getPublicKey() {
+        return publicKey;
+    }
+    public byte[] getPrivateKey() {
+        return privateKey;
     }
 }

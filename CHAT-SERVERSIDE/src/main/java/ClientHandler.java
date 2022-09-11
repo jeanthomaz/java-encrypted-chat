@@ -1,5 +1,12 @@
+import Entities.AsymmetricCryptography;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import java.io.*;
 import java.net.Socket;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,20 +19,34 @@ public class ClientHandler implements Runnable {
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
     private String clientUsername;
-    private String keyAccess;
+    private String channel;
+    private String publicKey;
     public ClientHandler(Socket socket) {
         try {
             this.socket = socket;
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.clientUsername = bufferedReader.readLine();
-            this.keyAccess = bufferedReader.readLine();
+            this.channel = bufferedReader.readLine();
 
-            putClientHandler(this.keyAccess, this);
+            AsymmetricCryptography aC = new AsymmetricCryptography();
+            int count = 0;
+            String test = "";
+            while (count < 6) {
+                String a = bufferedReader.readLine();
+                test += aC.decryptText(a, aC.getPrivate("KeyPair/privateKey"));
+                count++;
+            }
+
+            System.out.println(test);
+
+            putClientHandler(this.channel, this);
 
             broadcastMessage("Server: " + this.clientUsername + " has entered the chat");
         }catch (IOException e) {
             closeEverything(socket, bufferedReader, bufferedWriter);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -46,7 +67,7 @@ public class ClientHandler implements Runnable {
 
     public void broadcastMessage(String messageToSend) {
         clientHandlers.forEach((key, array) -> {
-            String keyAccess = this.keyAccess;
+            String keyAccess = this.channel;
             if(Objects.equals(key, keyAccess)) {
                 for (ClientHandler clientHandler : array) {
                     try {
@@ -76,7 +97,7 @@ public class ClientHandler implements Runnable {
         }
     }
     public void removeClientHandler () {
-        ArrayList<ClientHandler> clientHandlerArray = clientHandlers.get(this.keyAccess);
+        ArrayList<ClientHandler> clientHandlerArray = clientHandlers.get(this.channel);
         clientHandlerArray.remove(this);
         broadcastMessage("SERVER: " + this.clientUsername + " has left the chat");
     }

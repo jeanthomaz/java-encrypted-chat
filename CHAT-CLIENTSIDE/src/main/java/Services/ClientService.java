@@ -1,9 +1,13 @@
 package Services;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
+import Entities.AsymmetricCryptography;
+
+import javax.crypto.NoSuchPaddingException;
+import java.io.*;
 import java.net.Socket;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.util.Arrays;
 import java.util.Scanner;
 
 public class ClientService {
@@ -60,13 +64,27 @@ public class ClientService {
             }
         }).start();
     }
-    public static void sendMessage(BufferedWriter bufferedWriter, Socket socket, String username, String keyAccess) {
+    public static void sendMessage(BufferedWriter bufferedWriter, Socket socket, String username, String channel, byte[] publicKey) {
         try {
+            AsymmetricCryptography aC = new AsymmetricCryptography();
+            PublicKey publicKeyServer = aC.getPublicServer("ServerPublicKey/publicKey");
+
             bufferedWriter.write(username);
             bufferedWriter.newLine();
-            bufferedWriter.flush();
-            bufferedWriter.write(keyAccess);
+            bufferedWriter.write(channel);
             bufferedWriter.newLine();
+            int count = 0;
+            int startIndex = 0;
+            int endIndex = 27;
+            while (count < 6) {
+                byte[] newArray = Arrays.copyOfRange(publicKey, startIndex, endIndex);
+                String encrypted_publicKey = aC.encryptText(Arrays.toString(newArray), publicKeyServer);
+                bufferedWriter.write(encrypted_publicKey);
+                bufferedWriter.newLine();
+                startIndex = endIndex;
+                endIndex += 27;
+                count++;
+            }
             bufferedWriter.flush();
 
             Scanner scanner = new Scanner(System.in);
@@ -79,6 +97,10 @@ public class ClientService {
             }
         } catch (IOException e) {
             closeEverything(socket, bufferedWriter);
+        } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }
