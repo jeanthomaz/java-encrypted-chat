@@ -36,14 +36,14 @@ public class AsymmetricCryptography {
         KeyFactory kf = KeyFactory.getInstance("RSA");
         return kf.generatePublic(spec);
     }
-    public String encryptText(String msg, PrivateKey key)
+    public String encryptTextWithPrivateKey(String msg, PrivateKey key)
             throws NoSuchAlgorithmException, NoSuchPaddingException,
             UnsupportedEncodingException, IllegalBlockSizeException,
             BadPaddingException, InvalidKeyException {
         this.cipher.init(Cipher.ENCRYPT_MODE, key);
         return Base64.encodeBase64String(cipher.doFinal(msg.getBytes("UTF-8")));
     }
-    public String encryptText(String msg, PublicKey key)
+    public String encryptTextWithPublicKey(String msg, PublicKey key)
             throws NoSuchAlgorithmException, NoSuchPaddingException,
             UnsupportedEncodingException, IllegalBlockSizeException,
             BadPaddingException, InvalidKeyException {

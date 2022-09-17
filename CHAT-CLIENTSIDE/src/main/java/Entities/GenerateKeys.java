@@ -14,9 +14,9 @@ public class GenerateKeys {
     private PrivateKey privateKey;
     private PublicKey publicKey;
 
-    public GenerateKeys(int keylength) throws NoSuchAlgorithmException, NoSuchProviderException {
+    public GenerateKeys(int keyLength) throws NoSuchAlgorithmException {
         this.keyGen = KeyPairGenerator.getInstance("RSA");
-        this.keyGen.initialize(keylength);
+        this.keyGen.initialize(keyLength);
     }
 
     public void createKeys() {

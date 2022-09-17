@@ -19,7 +19,7 @@ public class SocketClient {
                 Client client = new Client(socket, username, channel);
 
                 ClientService.listenForMessage(client.getBufferedReader(), client.getSocket());
-                ClientService.sendMessage(client.getBufferedWriter(), client.getSocket(), client.getUsername(), client.getChannel(), client.getPublicKey());
+                ClientService.sendMessage(client.getBufferedWriter(), client.getSocket(), client.getUsername(), client.getChannel(), client.getPublicKey(), client.getPrivateKey());
 
             } catch (IOException e) {
                 e.printStackTrace();

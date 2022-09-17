@@ -1,16 +1,15 @@
 import Entities.AsymmetricCryptography;
+import Entities.UtilsSystem;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.*;
 import java.net.Socket;
-import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.*;
 
 public class ClientHandler implements Runnable {
 
@@ -20,29 +19,18 @@ public class ClientHandler implements Runnable {
     private BufferedWriter bufferedWriter;
     private String clientUsername;
     private String channel;
-    private String publicKey;
+    private PublicKey publicKey;
     public ClientHandler(Socket socket) {
         try {
+            AsymmetricCryptography aC = new AsymmetricCryptography();
             this.socket = socket;
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            this.clientUsername = bufferedReader.readLine();
-            this.channel = bufferedReader.readLine();
-
-            AsymmetricCryptography aC = new AsymmetricCryptography();
-            int count = 0;
-            String test = "";
-            while (count < 6) {
-                String a = bufferedReader.readLine();
-                test += aC.decryptText(a, aC.getPrivate("KeyPair/privateKey"));
-                count++;
-            }
-
-            System.out.println(test);
+            this.clientUsername = aC.decryptText(bufferedReader.readLine(), aC.getPrivate("KeyPair/privateKey"));
+            this.channel = aC.decryptText(bufferedReader.readLine(), aC.getPrivate("KeyPair/privateKey"));;
+            this.publicKey = publicClientDecrypt(bufferedReader);
 
             putClientHandler(this.channel, this);
-
-            broadcastMessage("Server: " + this.clientUsername + " has entered the chat");
         }catch (IOException e) {
             closeEverything(socket, bufferedReader, bufferedWriter);
         } catch (Exception e) {
@@ -64,20 +52,26 @@ public class ClientHandler implements Runnable {
             }
         }
     }
-
     public void broadcastMessage(String messageToSend) {
         clientHandlers.forEach((key, array) -> {
-            String keyAccess = this.channel;
-            if(Objects.equals(key, keyAccess)) {
+            String channel = this.channel;
+            if(Objects.equals(key, channel)) {
                 for (ClientHandler clientHandler : array) {
                     try {
                         if(!clientHandler.clientUsername.equals(clientUsername)) {
                             clientHandler.bufferedWriter.write(messageToSend);
                             clientHandler.bufferedWriter.newLine();
+                            publicKeySend(clientHandler.bufferedWriter, this.publicKey);
                             clientHandler.bufferedWriter.flush();
                         }
                     } catch (IOException e) {
                         closeEverything(socket, bufferedReader, bufferedWriter);
+                    } catch (NoSuchPaddingException e) {
+                        throw new RuntimeException(e);
+                    } catch (NoSuchAlgorithmException e) {
+                        throw new RuntimeException(e);
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
                     }
                 }
             }
@@ -99,9 +93,7 @@ public class ClientHandler implements Runnable {
     public void removeClientHandler () {
         ArrayList<ClientHandler> clientHandlerArray = clientHandlers.get(this.channel);
         clientHandlerArray.remove(this);
-        broadcastMessage("SERVER: " + this.clientUsername + " has left the chat");
     }
-
     public void closeEverything (Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
         removeClientHandler();
         try {
@@ -116,6 +108,57 @@ public class ClientHandler implements Runnable {
             }
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+    public PublicKey publicClientDecrypt(BufferedReader bufferedReader) throws Exception {
+
+        String decryptText;
+        String encryptText;
+        String publicKeyString = "";
+        byte[] publicKey;
+
+        int count = 0;
+        AsymmetricCryptography aC = new AsymmetricCryptography();
+        while (count < 18) {
+            encryptText = bufferedReader.readLine();
+            decryptText = aC.decryptText(encryptText, aC.getPrivate("KeyPair/privateKey"));
+
+            decryptText = decryptText.substring(1, decryptText.length() - 1) + ',';
+
+            publicKeyString += decryptText.replaceAll("\\s", "");
+
+            count++;
+        }
+
+        String[] test = publicKeyString.split(",");
+
+        publicKey = new byte[test.length];
+
+        for (int i = 0; i < test.length; i++) {
+            publicKey[i] = Byte.parseByte(test[i]);
+        }
+
+        X509EncodedKeySpec spec = new X509EncodedKeySpec(publicKey);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+
+        return kf.generatePublic(spec);
+    }
+    public static void publicKeySend(BufferedWriter bufferedWriter, PublicKey publicKey) throws Exception {
+        AsymmetricCryptography aC = new AsymmetricCryptography();
+        PrivateKey privateKeyServer = aC.getPrivate("KeyPair/privateKey");
+        int count = 1;
+        int parts = 18;
+        int startIndex = 0;
+        while (count <= parts){
+            int lastIndex = count * 9;
+            byte[] newArr = UtilsSystem.getSliceOfArray(publicKey.getEncoded(), startIndex,lastIndex);
+            String encryptPublicKey = aC.encryptText(Arrays.toString(newArr), privateKeyServer);
+
+            startIndex = lastIndex;
+            bufferedWriter.write(encryptPublicKey);
+            bufferedWriter.newLine();
+
+            count++;
         }
     }
 }

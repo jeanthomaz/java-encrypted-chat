@@ -3,6 +3,8 @@ package Entities;
 import Services.ClientService;
 import java.io.*;
 import java.net.Socket;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 
 public class Client {
     private Socket socket;
@@ -10,8 +12,8 @@ public class Client {
     private BufferedWriter bufferedWriter;
     private String username;
     private String channel;
-    private byte[] publicKey;
-    private byte[] privateKey;
+    private PublicKey publicKey;
+    private PrivateKey privateKey;
 
     public Client(Socket socket, String username, String channel) {
         GenerateKeys gk;
@@ -23,8 +25,8 @@ public class Client {
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.username = username;
             this.channel = channel;
-            this.privateKey = gk.getPrivateKey().getEncoded();
-            this.publicKey = gk.getPublicKey().getEncoded();
+            this.privateKey = gk.getPrivateKey();
+            this.publicKey = gk.getPublicKey();
         } catch (Exception e) {
             ClientService.closeEverything(socket, bufferedReader, bufferedWriter);
         }
@@ -49,10 +51,10 @@ public class Client {
     public BufferedWriter getBufferedWriter() {
         return this.bufferedWriter;
     }
-    public byte[] getPublicKey() {
+    public PublicKey getPublicKey() {
         return publicKey;
     }
-    public byte[] getPrivateKey() {
+    public PrivateKey getPrivateKey() {
         return privateKey;
     }
 }
