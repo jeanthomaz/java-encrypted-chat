@@ -99,28 +99,28 @@ public class ClientHandler implements Runnable {
     public void broadcastMessage(String userNameKey, String messageToSend) {
         clientHandlers.forEach((key, array) -> {
             String channel = this.channel;
-            if(Objects.equals(key, channel)) {
-                for (ClientHandler clientHandler : array) {
-                    try {
-                        if(!clientHandler.clientUsername.equals(clientUsername)) {
-                            AsymmetricCryptography aC = new AsymmetricCryptography();
-                            for (int cont = 1; cont < array.size(); cont++) {
-                                clientHandler.bufferedWriter.write(aC.encryptText("message", aC.getPrivate("KeyPair/privateKey")));
-                                clientHandler.bufferedWriter.newLine();
-                                clientHandler.bufferedWriter.write(aC.encryptText(userNameKey, aC.getPrivate("KeyPair/privateKey")));
-                                clientHandler.bufferedWriter.newLine();
-                                clientHandler.bufferedWriter.write(messageToSend);
-                                clientHandler.bufferedWriter.newLine();
-                            }
+                if(Objects.equals(key, channel)) {
+                        for (ClientHandler clientHandler : array) {
+                            try {
+                                if (!clientHandler.clientUsername.equals(clientUsername)) {
+                                    AsymmetricCryptography aC = new AsymmetricCryptography();
+                                    clientHandler.bufferedWriter.write(aC.encryptText("message", aC.getPrivate("KeyPair/privateKey")));
+                                    clientHandler.bufferedWriter.newLine();
+                                    clientHandler.bufferedWriter.write(aC.encryptText(userNameKey, aC.getPrivate("KeyPair/privateKey")));
+                                    clientHandler.bufferedWriter.newLine();
+                                    clientHandler.bufferedWriter.write(aC.encryptText(this.clientUsername, aC.getPrivate("KeyPair/privateKey")));
+                                    clientHandler.bufferedWriter.newLine();
+                                    clientHandler.bufferedWriter.write(messageToSend);
+                                    clientHandler.bufferedWriter.newLine();
 
-                            clientHandler.bufferedWriter.flush();
+                                    clientHandler.bufferedWriter.flush();
+                                }
+                            } catch (IOException e) {
+                                closeEverything(socket, bufferedReader, bufferedWriter);
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
                         }
-                    } catch (IOException e) {
-                        closeEverything(socket, bufferedReader, bufferedWriter);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
             }
         });
     }

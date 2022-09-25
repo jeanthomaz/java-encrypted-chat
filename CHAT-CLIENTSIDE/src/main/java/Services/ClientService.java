@@ -63,6 +63,7 @@ public class ClientService {
                     AsymmetricCryptography aC = new AsymmetricCryptography();
                     String typeData =  bufferedReader.readLine();
                     typeData = aC.decryptText(typeData, aC.getPublicServer("ServerPublicKey/publicKey"));
+
                     String usernameKey = bufferedReader.readLine();
                     usernameKey = aC.decryptText(usernameKey, aC.getPublicServer("ServerPublicKey/publicKey"));
 
@@ -72,12 +73,16 @@ public class ClientService {
                             publicKeys.put(usernameKey, publicKeySender);
                         }
                     }
+
                     if(typeData.equals("message")) {
+                        String usernameSender =  bufferedReader.readLine();
                         String message = bufferedReader.readLine();
 
                         if(username.equals(usernameKey)) {
+                            usernameSender = aC.decryptText(usernameSender, aC.getPublicServer("ServerPublicKey/publicKey"));
+
                             String decryptMessage = aC.decryptText(message, privateKey);
-                            System.out.println(decryptMessage);
+                            System.out.println(usernameSender + ": " + decryptMessage);
                         }
                     }
                 } catch (IOException e) {
