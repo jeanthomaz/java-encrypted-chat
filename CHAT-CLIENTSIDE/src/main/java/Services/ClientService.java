@@ -3,20 +3,20 @@ package Services;
 import Entities.AsymmetricCryptography;
 import Entities.UtilsSystem;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.Socket;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Arrays;
-import java.util.Scanner;
+import java.util.*;
 
 public class ClientService {
+    public static Map<String, PublicKey> publicKeys = new HashMap<>();
     public static void closeEverything (Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
         try {
             if (bufferedReader != null) {
@@ -56,20 +56,30 @@ public class ClientService {
             e.printStackTrace();
         }
     }
-    public static void listenForMessage (BufferedReader bufferedReader, Socket socket) {
+    public static void listenForMessage (BufferedReader bufferedReader, Socket socket, PrivateKey privateKey, String username) {
         new Thread(() -> {
             while (socket.isConnected()) {
                 try {
                     AsymmetricCryptography aC = new AsymmetricCryptography();
-                    String messageFromGroupChatEncrypt;
-                    String messageFromGroupChatDecrypt;
-                    PublicKey publicKeySender;
+                    String typeData =  bufferedReader.readLine();
+                    typeData = aC.decryptText(typeData, aC.getPublicServer("ServerPublicKey/publicKey"));
+                    String usernameKey = bufferedReader.readLine();
+                    usernameKey = aC.decryptText(usernameKey, aC.getPublicServer("ServerPublicKey/publicKey"));
 
-                    messageFromGroupChatEncrypt = bufferedReader.readLine();
-                    publicKeySender = publicSenderDecrypt(bufferedReader);
-                    messageFromGroupChatDecrypt = aC.decryptText(messageFromGroupChatEncrypt, publicKeySender);
+                    if (typeData.equals("publicKey")) {
+                        PublicKey publicKeySender = publicSenderDecrypt(bufferedReader);
+                        if(!publicKeys.containsKey(usernameKey)) {
+                            publicKeys.put(usernameKey, publicKeySender);
+                        }
+                    }
+                    if(typeData.equals("message")) {
+                        String message = bufferedReader.readLine();
 
-                    System.out.println(messageFromGroupChatDecrypt);
+                        if(username.equals(usernameKey)) {
+                            String decryptMessage = aC.decryptText(message, privateKey);
+                            System.out.println(decryptMessage);
+                        }
+                    }
                 } catch (IOException e) {
                     closeEverything(socket, bufferedReader);
                 } catch (Exception e) {
@@ -78,7 +88,7 @@ public class ClientService {
             }
         }).start();
     }
-    public static void sendMessage(BufferedWriter bufferedWriter, Socket socket, String username, String channel, PublicKey publicKey, PrivateKey privateKey) {
+    public static void sendMessage(BufferedWriter bufferedWriter, Socket socket, String username, String channel, PublicKey publicKey) {
         try {
             AsymmetricCryptography aC = new AsymmetricCryptography();
             username = aC.encryptTextWithPublicKey(username, aC.getPublicServer("ServerPublicKey/publicKey"));
@@ -94,10 +104,34 @@ public class ClientService {
             while (socket.isConnected()) {
                 String messageToSend = scanner.nextLine();
 
-                String encryptText = aC.encryptTextWithPrivateKey(messageToSend,privateKey);
+                publicKeys.forEach((usernameKey, publicKeySender) -> {
+                        try {
+                            usernameKey = aC.encryptTextWithPublicKey(usernameKey,aC.getPublicServer("ServerPublicKey/publicKey"));
+                            bufferedWriter.write(usernameKey);
+                            bufferedWriter.newLine();
+                            String encryptText = aC.encryptTextWithPublicKey(messageToSend,publicKeySender);
+                            bufferedWriter.write(encryptText);
+                            bufferedWriter.newLine();
 
-                bufferedWriter.write(encryptText);
-                bufferedWriter.newLine();
+                        } catch (NoSuchAlgorithmException e) {
+                            throw new RuntimeException(e);
+                        } catch (NoSuchPaddingException e) {
+                            throw new RuntimeException(e);
+                        } catch (UnsupportedEncodingException e) {
+                            throw new RuntimeException(e);
+                        } catch (IllegalBlockSizeException e) {
+                            throw new RuntimeException(e);
+                        } catch (BadPaddingException e) {
+                            throw new RuntimeException(e);
+                        } catch (InvalidKeyException e) {
+                            throw new RuntimeException(e);
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                });
+
                 bufferedWriter.flush();
             }
         } catch (IOException e) {

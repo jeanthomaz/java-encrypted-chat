@@ -56,6 +56,12 @@ public class AsymmetricCryptography {
         this.cipher.init(Cipher.DECRYPT_MODE, key);
         return new String(cipher.doFinal(Base64.decodeBase64(msg)), "UTF-8");
     }
+    public String decryptText(String msg, PrivateKey key)
+            throws InvalidKeyException, UnsupportedEncodingException,
+            IllegalBlockSizeException, BadPaddingException {
+        this.cipher.init(Cipher.DECRYPT_MODE, key);
+        return new String(cipher.doFinal(Base64.decodeBase64(msg)), "UTF-8");
+    }
     public PublicKey getPublicServer(String filename) throws Exception {
         byte[] keyBytes = Files.readAllBytes(new File(filename).toPath());
         X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);

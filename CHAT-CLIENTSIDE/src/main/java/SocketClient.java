@@ -18,8 +18,8 @@ public class SocketClient {
                 Socket socket = new Socket("localhost", 1234);
                 Client client = new Client(socket, username, channel);
 
-                ClientService.listenForMessage(client.getBufferedReader(), client.getSocket());
-                ClientService.sendMessage(client.getBufferedWriter(), client.getSocket(), client.getUsername(), client.getChannel(), client.getPublicKey(), client.getPrivateKey());
+                ClientService.listenForMessage(client.getBufferedReader(), client.getSocket(), client.getPrivateKey(), client.getUsername());
+                ClientService.sendMessage(client.getBufferedWriter(), client.getSocket(), client.getUsername(), client.getChannel(), client.getPublicKey());
 
             } catch (IOException e) {
                 e.printStackTrace();

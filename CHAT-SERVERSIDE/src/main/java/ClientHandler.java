@@ -1,13 +1,12 @@
 import Entities.AsymmetricCryptography;
 import Entities.UtilsSystem;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.*;
 import java.net.Socket;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 
@@ -31,6 +30,8 @@ public class ClientHandler implements Runnable {
             this.publicKey = publicClientDecrypt(bufferedReader);
 
             putClientHandler(this.channel, this);
+
+            broadcastPublicKeyChannel();
         }catch (IOException e) {
             closeEverything(socket, bufferedReader, bufferedWriter);
         } catch (Exception e) {
@@ -40,36 +41,82 @@ public class ClientHandler implements Runnable {
 
     @Override
     public void run() {
+        String userNameKey;
         String messageFromClient;
 
         while(socket.isConnected()) {
             try {
+                AsymmetricCryptography aC = new AsymmetricCryptography();
+                userNameKey = bufferedReader.readLine();
                 messageFromClient = bufferedReader.readLine();
-                broadcastMessage(messageFromClient);
+                broadcastMessage(aC.decryptText(userNameKey, aC.getPrivate("KeyPair/privateKey")) , messageFromClient);
             } catch (IOException e) {
                 closeEverything(socket, bufferedReader, bufferedWriter);
                 break;
+            } catch (NoSuchPaddingException e) {
+                throw new RuntimeException(e);
+            } catch (IllegalBlockSizeException e) {
+                throw new RuntimeException(e);
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            } catch (BadPaddingException e) {
+                throw new RuntimeException(e);
+            } catch (InvalidKeyException e) {
+                throw new RuntimeException(e);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
             }
         }
     }
-    public void broadcastMessage(String messageToSend) {
+    public void broadcastPublicKeyChannel() {
+        clientHandlers.forEach((key, array) -> {
+            String channel = this.channel;
+            if(Objects.equals(key, channel)) {
+                for (ClientHandler clientHandler : array) {
+                    array.forEach(( otherClientHandler ) -> {
+                        try {
+                            AsymmetricCryptography aC = new AsymmetricCryptography();
+                            clientHandler.bufferedWriter.write(aC.encryptText("publicKey", aC.getPrivate("KeyPair/privateKey")));
+                            clientHandler.bufferedWriter.newLine();
+                            clientHandler.bufferedWriter.write(aC.encryptText(otherClientHandler.clientUsername, aC.getPrivate("KeyPair/privateKey")));
+                            clientHandler.bufferedWriter.newLine();
+                            publicKeySend(clientHandler.bufferedWriter, otherClientHandler.publicKey);
+                            clientHandler.bufferedWriter.flush();
+                        } catch (IOException e) {
+                            closeEverything(socket, bufferedReader, bufferedWriter);
+                        } catch (NoSuchPaddingException e) {
+                            throw new RuntimeException(e);
+                        } catch (NoSuchAlgorithmException e) {
+                            throw new RuntimeException(e);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                }
+            }
+        });
+    }
+    public void broadcastMessage(String userNameKey, String messageToSend) {
         clientHandlers.forEach((key, array) -> {
             String channel = this.channel;
             if(Objects.equals(key, channel)) {
                 for (ClientHandler clientHandler : array) {
                     try {
                         if(!clientHandler.clientUsername.equals(clientUsername)) {
-                            clientHandler.bufferedWriter.write(messageToSend);
-                            clientHandler.bufferedWriter.newLine();
-                            publicKeySend(clientHandler.bufferedWriter, this.publicKey);
+                            AsymmetricCryptography aC = new AsymmetricCryptography();
+                            for (int cont = 1; cont < array.size(); cont++) {
+                                clientHandler.bufferedWriter.write(aC.encryptText("message", aC.getPrivate("KeyPair/privateKey")));
+                                clientHandler.bufferedWriter.newLine();
+                                clientHandler.bufferedWriter.write(aC.encryptText(userNameKey, aC.getPrivate("KeyPair/privateKey")));
+                                clientHandler.bufferedWriter.newLine();
+                                clientHandler.bufferedWriter.write(messageToSend);
+                                clientHandler.bufferedWriter.newLine();
+                            }
+
                             clientHandler.bufferedWriter.flush();
                         }
                     } catch (IOException e) {
                         closeEverything(socket, bufferedReader, bufferedWriter);
-                    } catch (NoSuchPaddingException e) {
-                        throw new RuntimeException(e);
-                    } catch (NoSuchAlgorithmException e) {
-                        throw new RuntimeException(e);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
