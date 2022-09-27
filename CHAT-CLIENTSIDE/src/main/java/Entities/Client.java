@@ -1,5 +1,6 @@
 package Entities;
 
+import Crypto.GenerateKeys;
 import Services.ClientService;
 import java.io.*;
 import java.net.Socket;
@@ -51,9 +52,11 @@ public class Client {
     public BufferedWriter getBufferedWriter() {
         return this.bufferedWriter;
     }
+
     public PublicKey getPublicKey() {
         return publicKey;
     }
+
     public PrivateKey getPrivateKey() {
         return privateKey;
     }

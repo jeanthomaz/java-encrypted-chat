@@ -1,9 +1,6 @@
-import Entities.AsymmetricCryptography;
+import Entities.Crypto.AsymmetricCryptography;
 import Entities.UtilsSystem;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import java.io.*;
 import java.net.Socket;
 import java.security.*;
@@ -25,9 +22,11 @@ public class ClientHandler implements Runnable {
             this.socket = socket;
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            this.clientUsername = aC.decryptText(bufferedReader.readLine(), aC.getPrivate("KeyPair/privateKey"));
-            this.channel = aC.decryptText(bufferedReader.readLine(), aC.getPrivate("KeyPair/privateKey"));;
+            this.clientUsername = aC.decryptText(bufferedReader.readLine(), aC.getPrivate());
+            this.channel = aC.decryptText(bufferedReader.readLine(), aC.getPrivate());
             this.publicKey = publicClientDecrypt(bufferedReader);
+
+            System.out.println(clientUsername);
 
             putClientHandler(this.channel, this);
 
@@ -49,20 +48,10 @@ public class ClientHandler implements Runnable {
                 AsymmetricCryptography aC = new AsymmetricCryptography();
                 userNameKey = bufferedReader.readLine();
                 messageFromClient = bufferedReader.readLine();
-                broadcastMessage(aC.decryptText(userNameKey, aC.getPrivate("KeyPair/privateKey")) , messageFromClient);
+                broadcastMessage(aC.decryptText(userNameKey, aC.getPrivate()) , messageFromClient);
             } catch (IOException e) {
                 closeEverything(socket, bufferedReader, bufferedWriter);
                 break;
-            } catch (NoSuchPaddingException e) {
-                throw new RuntimeException(e);
-            } catch (IllegalBlockSizeException e) {
-                throw new RuntimeException(e);
-            } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
-            } catch (BadPaddingException e) {
-                throw new RuntimeException(e);
-            } catch (InvalidKeyException e) {
-                throw new RuntimeException(e);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -76,18 +65,14 @@ public class ClientHandler implements Runnable {
                     array.forEach(( otherClientHandler ) -> {
                         try {
                             AsymmetricCryptography aC = new AsymmetricCryptography();
-                            clientHandler.bufferedWriter.write(aC.encryptText("publicKey", aC.getPrivate("KeyPair/privateKey")));
+                            clientHandler.bufferedWriter.write(aC.encryptText("publicKey", aC.getPrivate()));
                             clientHandler.bufferedWriter.newLine();
-                            clientHandler.bufferedWriter.write(aC.encryptText(otherClientHandler.clientUsername, aC.getPrivate("KeyPair/privateKey")));
+                            clientHandler.bufferedWriter.write(aC.encryptText(otherClientHandler.clientUsername, aC.getPrivate()));
                             clientHandler.bufferedWriter.newLine();
                             publicKeySend(clientHandler.bufferedWriter, otherClientHandler.publicKey);
                             clientHandler.bufferedWriter.flush();
                         } catch (IOException e) {
                             closeEverything(socket, bufferedReader, bufferedWriter);
-                        } catch (NoSuchPaddingException e) {
-                            throw new RuntimeException(e);
-                        } catch (NoSuchAlgorithmException e) {
-                            throw new RuntimeException(e);
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
@@ -104,11 +89,11 @@ public class ClientHandler implements Runnable {
                             try {
                                 if (!clientHandler.clientUsername.equals(clientUsername)) {
                                     AsymmetricCryptography aC = new AsymmetricCryptography();
-                                    clientHandler.bufferedWriter.write(aC.encryptText("message", aC.getPrivate("KeyPair/privateKey")));
+                                    clientHandler.bufferedWriter.write(aC.encryptText("message", aC.getPrivate()));
                                     clientHandler.bufferedWriter.newLine();
-                                    clientHandler.bufferedWriter.write(aC.encryptText(userNameKey, aC.getPrivate("KeyPair/privateKey")));
+                                    clientHandler.bufferedWriter.write(aC.encryptText(userNameKey, aC.getPrivate()));
                                     clientHandler.bufferedWriter.newLine();
-                                    clientHandler.bufferedWriter.write(aC.encryptText(this.clientUsername, aC.getPrivate("KeyPair/privateKey")));
+                                    clientHandler.bufferedWriter.write(aC.encryptText(this.clientUsername, aC.getPrivate()));
                                     clientHandler.bufferedWriter.newLine();
                                     clientHandler.bufferedWriter.write(messageToSend);
                                     clientHandler.bufferedWriter.newLine();
@@ -161,23 +146,23 @@ public class ClientHandler implements Runnable {
 
         String decryptText;
         String encryptText;
-        String publicKeyString = "";
+        StringBuilder publicKeyString = new StringBuilder();
         byte[] publicKey;
 
         int count = 0;
         AsymmetricCryptography aC = new AsymmetricCryptography();
         while (count < 18) {
             encryptText = bufferedReader.readLine();
-            decryptText = aC.decryptText(encryptText, aC.getPrivate("KeyPair/privateKey"));
+            decryptText = aC.decryptText(encryptText, aC.getPrivate());
 
             decryptText = decryptText.substring(1, decryptText.length() - 1) + ',';
 
-            publicKeyString += decryptText.replaceAll("\\s", "");
+            publicKeyString.append(decryptText.replaceAll("\\s", ""));
 
             count++;
         }
 
-        String[] test = publicKeyString.split(",");
+        String[] test = publicKeyString.toString().split(",");
 
         publicKey = new byte[test.length];
 
@@ -192,7 +177,7 @@ public class ClientHandler implements Runnable {
     }
     public static void publicKeySend(BufferedWriter bufferedWriter, PublicKey publicKey) throws Exception {
         AsymmetricCryptography aC = new AsymmetricCryptography();
-        PrivateKey privateKeyServer = aC.getPrivate("KeyPair/privateKey");
+        PrivateKey privateKeyServer = aC.getPrivate();
         int count = 1;
         int parts = 18;
         int startIndex = 0;
