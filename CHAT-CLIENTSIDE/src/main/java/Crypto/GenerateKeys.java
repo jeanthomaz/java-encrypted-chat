@@ -3,7 +3,6 @@ package Crypto;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
@@ -12,12 +11,10 @@ public class GenerateKeys {
     private KeyPair pair;
     private PrivateKey privateKey;
     private PublicKey publicKey;
-
     public GenerateKeys(int keyLength) throws NoSuchAlgorithmException {
         this.keyGen = KeyPairGenerator.getInstance("RSA");
         this.keyGen.initialize(keyLength);
     }
-
     public void createKeys() {
         this.pair = this.keyGen.generateKeyPair();
         this.privateKey = pair.getPrivate();

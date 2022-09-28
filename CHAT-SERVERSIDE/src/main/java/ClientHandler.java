@@ -26,8 +26,6 @@ public class ClientHandler implements Runnable {
             this.channel = aC.decryptText(bufferedReader.readLine(), aC.getPrivate());
             this.publicKey = publicClientDecrypt(bufferedReader);
 
-            System.out.println(clientUsername);
-
             putClientHandler(this.channel, this);
 
             broadcastPublicKeyChannel();

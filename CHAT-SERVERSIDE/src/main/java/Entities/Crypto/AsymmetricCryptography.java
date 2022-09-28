@@ -8,7 +8,7 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.*;
 import java.security.spec.PKCS8EncodedKeySpec;
 
@@ -19,7 +19,7 @@ public class AsymmetricCryptography {
     }
     // https://docs.oracle.com/javase/8/docs/api/java/security/spec/PKCS8EncodedKeySpec.html
     public PrivateKey getPrivate() throws Exception {
-        byte[] keyBytes = Files.readAllBytes(Path.of("C:\\Users\\danie\\KeyPair\\privateKey"));
+        byte[] keyBytes = Files.readAllBytes(Paths.get("KeyPair/privateKey"));
         PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
         KeyFactory kf = KeyFactory.getInstance("RSA");
         return kf.generatePrivate(spec);

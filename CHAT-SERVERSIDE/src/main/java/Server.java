@@ -1,8 +1,12 @@
 import Entities.Crypto.GenerateKeys;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class Server {
     private final ServerSocket serverSocket;
@@ -38,7 +42,10 @@ public class Server {
     }
 
     public static void main(String[] args) throws IOException {
-        GenerateKeys.main(args);
+        Path root = Paths.get("KeyPair/");
+        if(!root.toFile().exists()) {
+            GenerateKeys.main(args);
+        }
         ServerSocket serverSocket = new ServerSocket(1234);
         Server server = new Server(serverSocket);
         server.startServer();

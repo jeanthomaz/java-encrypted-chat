@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.*;
+import java.util.Arrays;
 
 public class GenerateKeys {
 
@@ -33,8 +35,8 @@ public class GenerateKeys {
     }
 
     public void writeToFile(String filename, byte[] key) throws IOException {
-        String path = String.format("C:\\Users\\danie\\KeyPair\\%s", filename);
-        File f = Path.of(path).toFile();
+        Path path = Paths.get("KeyPair", filename);
+        File f = path.toFile();
         f.getParentFile().mkdirs();
 
         FileOutputStream fos = new FileOutputStream(f);
